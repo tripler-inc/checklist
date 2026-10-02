@@ -1,17 +1,60 @@
-# checklist
+# Checklist
 
-A new Flutter project.
+A Flutter checklist app for managing daily tasks and reminders across mobile and desktop platforms.
+
+## Features
+
+- Add new checklist items
+- Mark items complete or incomplete
+- Edit an existing item inline via dialog
+- Delete items with swipe-to-dismiss
+- Reorder items with drag handles
+- Persist tasks locally with SharedPreferences
+- Toggle between light and dark theme
+- Built with Flutter Material 3 design
+
+## Tech Stack
+
+- Flutter
+- Dart
+- SharedPreferences
+- Material 3
+
+## Project Structure
+
+- lib/main.dart — app bootstrap
+- lib/app.dart — app theme configuration and root MaterialApp
+- lib/screens/checklist_screen.dart — checklist screen behavior and layout
+- lib/widgets/ — reusable UI components
+- lib/models/checklist_item.dart — checklist item model
+- lib/repositories/ — persistence and theme storage logic
+- test/widget_test.dart — widget tests for key flows
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK installed and on your PATH
+- A supported IDE such as VS Code or Android Studio
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Install dependencies
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+```
+
+### Run the app
+
+```bash
+flutter run
+```
+
+### Run tests
+
+```bash
+flutter test
+```
+
+## Notes
+
+The app stores checklist data locally using SharedPreferences so your items remain available after restarting the app. The theme preference is also persisted between launches.
