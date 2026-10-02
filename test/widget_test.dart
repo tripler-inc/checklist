@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,8 +17,57 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Checklist'), findsOneWidget);
+    expect(find.byIcon(Icons.save), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.text('Add item'), findsNothing);
+    expect(find.text('Add'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
     expect(find.text('Add item'), findsOneWidget);
     expect(find.text('Add'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add item'), findsNothing);
+    expect(find.text('Add'), findsNothing);
+  });
+
+  testWidgets('saves named lists and loads them with unchecked items',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Saved Task');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isTrue);
+
+    await tester.tap(find.byIcon(Icons.save));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved lists'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, 'Groceries');
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Groceries'), findsOneWidget);
+
+    await tester.tap(find.text('Groceries'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Checklist - Groceries'), findsOneWidget);
+    expect(find.text('Saved Task'), findsOneWidget);
+    expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isFalse);
   });
 
   testWidgets('loads persisted checklist items', (WidgetTester tester) async {
@@ -38,6 +88,9 @@ void main() {
   testWidgets('adds, toggles, edits, and deletes an item',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Buy milk');
@@ -76,6 +129,9 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.byType(TextField).first, 'Task A');
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
@@ -84,10 +140,14 @@ void main() {
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
 
-    final dragHandles = find.byIcon(Icons.drag_handle);
-    expect(dragHandles, findsNWidgets(2));
+    expect(find.byIcon(Icons.drag_handle), findsNothing);
 
-    await tester.drag(dragHandles.at(1), const Offset(0, -300));
+    final taskBText = find.text('Task B');
+    final taskBCenter = tester.getCenter(taskBText);
+    final gesture = await tester.startGesture(taskBCenter);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -300));
+    await gesture.up();
     await tester.pumpAndSettle();
 
     final taskBTop = tester.getTopLeft(find.text('Task B')).dy;

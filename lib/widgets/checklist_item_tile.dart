@@ -29,33 +29,20 @@ class ChecklistItemTile extends StatelessWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) => onDelete(),
-      child: Row(
-        children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(Icons.drag_handle),
-            ),
+      child: CheckboxListTile(
+        title: GestureDetector(
+          onTap: onEdit,
+          child: Text(
+            item.text,
+            style: const TextStyle(fontSize: 20),
           ),
-          Expanded(
-            child: CheckboxListTile(
-              title: GestureDetector(
-                onTap: onEdit,
-                child: Text(
-                  item.text,
-                  style: const TextStyle(fontSize: 20),
-                ),
-              ),
-              value: item.checked,
-              onChanged: onToggle,
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-        ],
+        ),
+        value: item.checked,
+        onChanged: onToggle,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        dense: true,
+        visualDensity: VisualDensity.compact,
       ),
     );
   }
