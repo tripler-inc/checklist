@@ -19,6 +19,7 @@ void main() {
     expect(find.text('Checklist'), findsOneWidget);
     expect(find.byIcon(Icons.save), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.byIcon(Icons.settings), findsOneWidget);
     expect(find.text('Add item'), findsNothing);
     expect(find.text('Add'), findsNothing);
 
@@ -33,6 +34,50 @@ void main() {
 
     expect(find.text('Add item'), findsNothing);
     expect(find.text('Add'), findsNothing);
+  });
+
+  testWidgets('settings New List clears items and resets title',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Task to clear');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    expect(find.text('Task to clear'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.save));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Existing List');
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(ListTile),
+            matching: find.text('Existing List'),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Mode'), findsOneWidget);
+    expect(find.text('New List'), findsOneWidget);
+
+    await tester.tap(find.text('New List'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Checklist'), findsOneWidget);
+    expect(find.text('Task to clear'), findsNothing);
+    expect(find.byType(Checkbox), findsNothing);
   });
 
   testWidgets('saves named lists and loads them with unchecked items',
@@ -60,12 +105,38 @@ void main() {
     await tester.tap(find.text('Save').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Groceries'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(ListTile), matching: find.text('Groceries')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.text('Groceries'));
+    await tester.longPress(
+      find
+          .descendant(
+            of: find.byType(ListTile),
+            matching: find.text('Groceries'),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Checklist - Groceries'), findsOneWidget);
+    final nameField = tester.widget<TextField>(find.byType(TextField).last);
+    expect(nameField.controller?.text, 'Groceries');
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(ListTile),
+            matching: find.text('Groceries'),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Groceries')),
+      findsOneWidget,
+    );
     expect(find.text('Saved Task'), findsOneWidget);
     expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isFalse);
   });

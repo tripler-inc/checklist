@@ -1,5 +1,6 @@
 import 'package:checklist/models/checklist_item.dart';
 import 'package:checklist/repositories/checklist_repository.dart';
+import 'package:checklist/screens/settings_screen.dart';
 import 'package:checklist/widgets/checklist_input_bar.dart';
 import 'package:checklist/widgets/checklist_item_tile.dart';
 import 'package:checklist/widgets/edit_item_dialog.dart';
@@ -81,6 +82,37 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
     });
   }
 
+  Future<void> _openSettings() async {
+    final action = await Navigator.of(context).push<SettingsAction>(
+      MaterialPageRoute(
+        builder: (_) => const SettingsScreen(),
+      ),
+    );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    if (action == SettingsAction.toggleMode) {
+      widget.onToggleTheme?.call();
+      return;
+    }
+
+    if (action == SettingsAction.newList) {
+      await _startNewList();
+    }
+  }
+
+  Future<void> _startNewList() async {
+    setState(() {
+      _items.clear();
+      _currentListName = null;
+      _isAddingItem = false;
+      _controller.clear();
+    });
+    await _saveItems();
+  }
+
   Future<void> _openSavedListsDialog() async {
     _saveListNameController.clear();
     var savedListNames = await widget._repository.loadSavedListNames();
@@ -96,99 +128,104 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('Saved lists'),
-              content: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _saveListNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'New list name',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () async {
-                        final name = _saveListNameController.text.trim();
-                        if (name.isEmpty) {
-                          return;
-                        }
-
-                        await widget._repository.saveNamedList(name, _items);
-                        final updatedNames =
-                            await widget._repository.loadSavedListNames();
-
-                        if (!mounted) {
-                          return;
-                        }
-
-                        setState(() {
-                          _currentListName = name;
-                        });
-
-                        if (!dialogContext.mounted) {
-                          return;
-                        }
-
-                        setDialogState(() {
-                          savedListNames = updatedNames;
-                        });
-                        _saveListNameController.clear();
-                      },
-                      child: const Text('Save'),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Existing files',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    if (savedListNames.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('No saved lists yet.'),
-                      )
-                    else
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 220),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: savedListNames.length,
-                          itemBuilder: (context, index) {
-                            final name = savedListNames[index];
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(name),
-                              onTap: () async {
-                                final loadedItems =
-                                    await widget._repository.loadNamedList(name);
-
-                                if (!mounted) {
-                                  return;
-                                }
-
-                                setState(() {
-                                  _items
-                                    ..clear()
-                                    ..addAll(loadedItems);
-                                  _currentListName = name;
-                                  _isAddingItem = false;
-                                  _controller.clear();
-                                });
-                                await _saveItems();
-
-                                if (dialogContext.mounted) {
-                                  Navigator.of(dialogContext).pop();
-                                }
-                              },
-                            );
-                          },
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: 360,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _saveListNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'New list name',
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: () async {
+                          final name = _saveListNameController.text.trim();
+                          if (name.isEmpty) {
+                            return;
+                          }
+
+                          await widget._repository.saveNamedList(name, _items);
+                          final updatedNames =
+                              await widget._repository.loadSavedListNames();
+
+                          if (!mounted) {
+                            return;
+                          }
+
+                          setState(() {
+                            _currentListName = name;
+                          });
+
+                          if (!dialogContext.mounted) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            savedListNames = updatedNames;
+                          });
+                          _saveListNameController.clear();
+                        },
+                        child: const Text('Save'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Existing files',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      if (savedListNames.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('No saved lists yet.'),
+                        )
+                      else
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 220),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: savedListNames.length,
+                            itemBuilder: (context, index) {
+                              final name = savedListNames[index];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(name),
+                                onLongPress: () {
+                                  _saveListNameController.text = name;
+                                },
+                                onTap: () async {
+                                  final loadedItems =
+                                      await widget._repository.loadNamedList(name);
+
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    _items
+                                      ..clear()
+                                      ..addAll(loadedItems);
+                                    _currentListName = name;
+                                    _isAddingItem = false;
+                                    _controller.clear();
+                                  });
+                                  await _saveItems();
+
+                                  if (dialogContext.mounted) {
+                                    Navigator.of(dialogContext).pop();
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -216,9 +253,7 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
         title: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Text(
-            _currentListName == null
-                ? 'Checklist'
-                : 'Checklist - $_currentListName',
+            _currentListName == null ? 'Checklist' : _currentListName!,
             softWrap: false,
           ),
         ),
@@ -232,8 +267,8 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
             onPressed: _toggleAddItem,
           ),
           IconButton(
-            icon: const Icon(Icons.brightness_6),
-            onPressed: widget.onToggleTheme,
+            icon: const Icon(Icons.settings),
+            onPressed: _openSettings,
           ),
         ],
       ),
