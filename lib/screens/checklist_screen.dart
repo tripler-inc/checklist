@@ -192,34 +192,98 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                             itemCount: savedListNames.length,
                             itemBuilder: (context, index) {
                               final name = savedListNames[index];
-                              return ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(name),
-                                onLongPress: () {
-                                  _saveListNameController.text = name;
-                                },
-                                onTap: () async {
-                                  final loadedItems =
-                                      await widget._repository.loadNamedList(name);
+                              return Dismissible(
+                                key: ValueKey('saved_list_$name'),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  color: Colors.red,
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: const Icon(Icons.delete, color: Colors.white),
+                                ),
+                                confirmDismiss: (_) async {
+                                  final shouldDelete = await showDialog<bool>(
+                                        context: dialogContext,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: const Text('Delete list'),
+                                            content: Text(
+                                              'Are you sure you want to delete list $name?',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(false);
+                                                },
+                                                child: const Text('No'),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(true);
+                                                },
+                                                child: const Text('Yes'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ) ??
+                                      false;
 
-                                  if (!mounted) {
-                                    return;
+                                  if (!shouldDelete) {
+                                    return false;
                                   }
 
-                                  setState(() {
-                                    _items
-                                      ..clear()
-                                      ..addAll(loadedItems);
-                                    _currentListName = name;
-                                    _isAddingItem = false;
-                                    _controller.clear();
+                                  await widget._repository.deleteNamedList(name);
+                                  final updatedNames =
+                                      await widget._repository.loadSavedListNames();
+
+                                  if (!mounted || !dialogContext.mounted) {
+                                    return false;
+                                  }
+
+                                  if (_currentListName == name) {
+                                    setState(() {
+                                      _currentListName = null;
+                                    });
+                                  }
+                                  if (_saveListNameController.text.trim() == name) {
+                                    _saveListNameController.clear();
+                                  }
+
+                                  setDialogState(() {
+                                    savedListNames = updatedNames;
                                   });
-                                  await _saveItems();
-
-                                  if (dialogContext.mounted) {
-                                    Navigator.of(dialogContext).pop();
-                                  }
+                                  return true;
                                 },
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(name),
+                                  onLongPress: () {
+                                    _saveListNameController.text = name;
+                                  },
+                                  onTap: () async {
+                                    final loadedItems =
+                                        await widget._repository.loadNamedList(name);
+
+                                    if (!mounted) {
+                                      return;
+                                    }
+
+                                    setState(() {
+                                      _items
+                                        ..clear()
+                                        ..addAll(loadedItems);
+                                      _currentListName = name;
+                                      _isAddingItem = false;
+                                      _controller.clear();
+                                    });
+                                    await _saveItems();
+
+                                    if (dialogContext.mounted) {
+                                      Navigator.of(dialogContext).pop();
+                                    }
+                                  },
+                                ),
                               );
                             },
                           ),

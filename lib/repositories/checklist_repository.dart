@@ -62,6 +62,18 @@ class ChecklistRepository {
     return itemTexts.map((text) => ChecklistItem(text, checked: false)).toList();
   }
 
+  Future<void> deleteNamedList(String name) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedLists = await _loadSavedLists();
+    savedLists.remove(trimmedName);
+    await prefs.setString(_savedListsKey, jsonEncode(savedLists));
+  }
+
   Future<Map<String, List<String>>> _loadSavedLists() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_savedListsKey);

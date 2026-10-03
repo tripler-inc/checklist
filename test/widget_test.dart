@@ -8,6 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:checklist/main.dart';
 
 void main() {
+  String formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
@@ -71,6 +77,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Mode'), findsOneWidget);
     expect(find.text('New List'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
 
     await tester.tap(find.text('New List'));
     await tester.pumpAndSettle();
@@ -78,6 +85,28 @@ void main() {
     expect(find.text('Checklist'), findsOneWidget);
     expect(find.text('Task to clear'), findsNothing);
     expect(find.byType(Checkbox), findsNothing);
+  });
+
+  testWidgets('settings About shows app details', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Checklist'), findsOneWidget);
+    expect(find.text('Version'), findsOneWidget);
+    expect(find.text('Last compile date'), findsOneWidget);
+    expect(find.text('1.0'), findsOneWidget);
+    expect(find.text(formatDate(DateTime.now())), findsOneWidget);
+    expect(
+      find.textContaining('create and manage reusable lists'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('saves named lists and loads them with unchecked items',
@@ -139,6 +168,58 @@ void main() {
     );
     expect(find.text('Saved Task'), findsOneWidget);
     expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isFalse);
+  });
+
+  testWidgets('swipe delete saved list asks confirmation',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Delete candidate');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.save));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).last, 'Delete Me');
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+
+    final savedListLabel = find
+        .descendant(of: find.byType(ListTile), matching: find.text('Delete Me'))
+        .first;
+    expect(savedListLabel, findsOneWidget);
+
+    await tester.drag(savedListLabel, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete list'), findsOneWidget);
+    expect(
+      find.text('Are you sure you want to delete list Delete Me?'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(of: find.byType(ListTile), matching: find.text('Delete Me')),
+      findsOneWidget,
+    );
+
+    await tester.drag(savedListLabel, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(of: find.byType(ListTile), matching: find.text('Delete Me')),
+      findsNothing,
+    );
   });
 
   testWidgets('loads persisted checklist items', (WidgetTester tester) async {

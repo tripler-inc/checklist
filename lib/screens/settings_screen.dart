@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:checklist/screens/about_screen.dart';
 
 enum SettingsAction { toggleMode, newList }
 
@@ -25,6 +26,17 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('New List'),
             onTap: () {
               Navigator.of(context).pop(SettingsAction.newList);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AboutScreen(),
+                ),
+              );
             },
           ),
         ],
